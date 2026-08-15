@@ -38,90 +38,68 @@ export function SiteNav() {
           </button>
           
           <button
-            className="menu-trigger flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-900/80 border border-amber-500/30 text-amber-300 text-xs font-mono uppercase tracking-wider transition-all hover:bg-neutral-800"
+            className="menu-trigger flex items-center gap-1.5 text-xs font-mono uppercase tracking-widest text-amber-300 hover:text-white transition-colors"
             onClick={() => setMenu(true)}
           >
             <span>Menu</span>
-            <span className="text-amber-400">↓</span>
+            <span className="text-amber-400 font-sans">→</span>
           </button>
         </div>
       </header>
 
-      {/* Smooth Sliding Full Screen Mobile Menu Overlay */}
+      {/* Clean & Minimal Portfolio-style Mobile Menu Overlay */}
       {menu && (
-        <div className="fixed inset-0 z-[100] bg-neutral-950/95 backdrop-blur-2xl text-white flex flex-col justify-between p-6 sm:p-10 animate-in fade-in slide-in-from-top-6 duration-300">
+        <div className="fixed inset-0 z-[100] bg-[#0A0908]/98 backdrop-blur-xl text-white flex flex-col justify-between p-6 sm:p-10 animate-in fade-in duration-200">
           
-          {/* Top Header Row */}
-          <div className="flex items-center justify-between border-b border-neutral-800 pb-6">
+          {/* Header Row */}
+          <div className="flex items-center justify-between border-b border-neutral-800/80 pb-6">
             <Link href="/" onClick={() => setMenu(false)} className="wordmark">
               TRENDY<span>SCENTS</span>
             </Link>
             
             <button
               onClick={() => setMenu(false)}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 font-mono text-xs uppercase tracking-widest hover:bg-amber-500/20 transition-all group"
+              className="flex items-center gap-1.5 text-amber-400 font-mono text-xs uppercase tracking-widest hover:text-white transition-colors"
             >
               <span>Close</span>
-              <X size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+              <X size={16} />
             </button>
           </div>
 
-          {/* Staggered Navigation Links */}
-          <div className="my-auto py-8 space-y-4">
+          {/* Minimal Links List */}
+          <div className="my-auto py-8 space-y-6">
             {[
-              { label: 'Catalogue & Bar', href: '/shop', num: '01' },
-              { label: 'The Experience', href: '/#bar', num: '02' },
-              { label: 'About The Nose', href: '/about', num: '03' },
-              { label: 'Flagship Location', href: '/#visit', num: '04' },
-              { label: 'Checkout & Cart', href: '/checkout', num: '05' }
-            ].map((link, idx) => (
+              { label: 'Catalogue', href: '/shop' },
+              { label: 'The Bar', href: '/#bar' },
+              { label: 'About The Nose', href: '/about' },
+              { label: 'Visit Us', href: '/#visit' },
+              { label: 'Checkout', href: '/checkout' }
+            ].map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenu(false)}
-                className="group flex items-baseline justify-between border-b border-neutral-800/80 pb-3 hover:border-amber-400 transition-colors"
-                style={{ animationDelay: `${idx * 60}ms` }}
+                className="block font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white hover:text-amber-400 transition-colors"
               >
-                <span className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-white group-hover:text-amber-300 transition-colors">
-                  {link.label}
-                </span>
-                <span className="font-mono text-xs text-amber-400/80 group-hover:text-amber-300 tracking-widest">
-                  [{link.num}]
-                </span>
+                {link.label}
               </Link>
             ))}
           </div>
 
-          {/* Footer Info Row */}
-          <div className="border-t border-neutral-800 pt-6 space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono text-neutral-400">
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="text-amber-400" />
-                <span>Isaac Boro Expressway · Yenagoa, Bayelsa</span>
-              </div>
-              <span className="text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
-                Mon–Sat: 10:00 AM – 8:00 PM
-              </span>
+          {/* Minimal Footer Info */}
+          <div className="border-t border-neutral-800/80 pt-6 flex items-center justify-between text-xs font-mono text-neutral-400">
+            <div className="flex items-center gap-2">
+              <MapPin size={13} className="text-amber-400" />
+              <span>Isaac Boro Expressway, Yenagoa</span>
             </div>
-
-            <div className="flex gap-3 pt-1">
-              <a
-                href={storeLocation.googleMapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="w-1/2 py-3 rounded-xl bg-neutral-900 border border-neutral-700 text-neutral-200 text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1.5"
-              >
-                Google Maps <ExternalLink size={13} />
-              </a>
-              <a
-                href="https://wa.me/2348012345678"
-                target="_blank"
-                rel="noreferrer"
-                className="w-1/2 py-3 rounded-xl bg-amber-500 text-neutral-950 text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20"
-              >
-                WhatsApp Bar
-              </a>
-            </div>
+            <a
+              href="https://wa.me/2348012345678"
+              target="_blank"
+              rel="noreferrer"
+              className="text-amber-400 hover:underline"
+            >
+              WhatsApp →
+            </a>
           </div>
 
         </div>
