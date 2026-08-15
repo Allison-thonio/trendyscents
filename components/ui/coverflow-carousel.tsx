@@ -129,25 +129,36 @@ export function CoverflowCarousel({
 
   const settle = React.useCallback(
     (target: number) => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       targetRef.current = target;
       setSelected(indexAt(target));
 
-      const step = () => {
-        const remaining = target - posRef.current;
-        if (Math.abs(remaining) < 0.0004) {
-          posRef.current = target;
+      import("gsap").then(({ default: gsap }) => {
+        // Kill any existing animation on posRef
+        gsap.killTweensOf(posRef);
+        
+        gsap.to(posRef, {
+          current: target,
+          duration: 0.5,
+          ease: "power3.out",
+          onUpdate: paint,
+        });
+      }).catch(() => {
+        // Fallback if gsap isn't available
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+        const step = () => {
+          const remaining = target - posRef.current;
+          if (Math.abs(remaining) < 0.0004) {
+            posRef.current = target;
+            paint();
+            rafRef.current = null;
+            return;
+          }
+          posRef.current += remaining * 0.16;
           paint();
-          rafRef.current = null;
-          return;
-        }
-        // ponytail: exponential ease-out, not a spring. Swap in a spring only
-        // if the settle needs overshoot.
-        posRef.current += remaining * 0.16;
-        paint();
+          rafRef.current = requestAnimationFrame(step);
+        };
         rafRef.current = requestAnimationFrame(step);
-      };
-      rafRef.current = requestAnimationFrame(step);
+      });
     },
     [indexAt, paint],
   );
@@ -178,6 +189,9 @@ export function CoverflowCarousel({
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    import("gsap").then(({ default: gsap }) => {
+      gsap.killTweensOf(posRef);
+    }).catch(() => {});
     event.currentTarget.setPointerCapture(event.pointerId);
     targetRef.current = posRef.current;
     dragRef.current = {
