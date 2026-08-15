@@ -4,6 +4,7 @@ import { Footer, SiteNav } from '@/components/site-shell'
 import { ownerDetails, ownerImages } from '@/lib/catalog'
 import { OwnerShowcase } from '@/components/owner-showcase'
 import { ShopGalleryShowcase } from '@/components/shop-gallery-showcase'
+import { OwnerPortraitCard } from '@/components/owner-portrait-card'
 
 export default function AboutPage() {
   return (
@@ -118,23 +119,14 @@ export default function AboutPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
                 {ownerImages.map((img) => (
-                  <div key={img.src} className="group relative rounded-2xl overflow-hidden border border-neutral-800 shadow-xl bg-neutral-900 aspect-[3/4]">
-                    <img
-                      src={img.src}
-                      alt={img.alt}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 p-4 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 text-white">
-                      <span className="text-xs text-amber-400 font-mono uppercase tracking-wider block mb-1">
-                        {img.label}
-                      </span>
-                      <p className="font-serif text-lg font-bold text-neutral-100">{ownerDetails.name}</p>
-                      <p className="text-xs text-neutral-300">{ownerDetails.role}</p>
-                    </div>
-                  </div>
+                  <OwnerPortraitCard
+                    key={img.src}
+                    src={img.src}
+                    alt={img.alt}
+                    label={img.label}
+                  />
                 ))}
               </div>
             </div>
