@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { shopImages } from '@/lib/catalog'
-import { Sparkles, Eye, Store, Compass } from 'lucide-react'
+import { Sparkles, Eye, EyeOff, Store, Compass } from 'lucide-react'
 
 export function ShopGalleryShowcase() {
   const [activeIdx, setActiveIdx] = useState(0)
