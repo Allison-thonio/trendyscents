@@ -27,7 +27,7 @@ export default function Page() {
               <br />
               millilitre.
             </h1>
-            <p className="section-intro" style={{ color: 'var(--parchment)' }}>
+            <p className="section-intro font-medium" style={{ color: '#FFFFFF', opacity: 1, textShadow: '0 2px 10px rgba(0,0,0,0.9)' }}>
               Your signature scent, decanted with care. Amber oils, honest advice, and a little room to find yourself.
             </p>
             <Link href="/shop" className="button button-amber">

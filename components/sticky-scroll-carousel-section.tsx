@@ -45,10 +45,10 @@ export function StickyScrollCarouselSection() {
     <div
       ref={containerRef}
       className="relative w-full bg-neutral-950 text-neutral-100"
-      style={{ height: '300vh' }}
+      style={{ height: '380vh' }}
     >
       {/* Sticky Fullscreen Frame */}
-      <div className="sticky top-0 h-screen w-full flex flex-col justify-between py-10 px-4 sm:px-8 overflow-hidden bg-gradient-to-b from-neutral-950 via-neutral-900 to-black">
+      <div className="sticky top-0 h-[100svh] w-full flex flex-col justify-between py-6 sm:py-10 px-4 sm:px-8 overflow-hidden bg-gradient-to-b from-neutral-950 via-neutral-900 to-black">
         
         {/* Ambient Amber Background Glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[380px] bg-amber-500/10 blur-[150px] rounded-full pointer-events-none" />
