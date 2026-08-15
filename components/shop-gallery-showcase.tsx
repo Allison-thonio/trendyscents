@@ -6,11 +6,15 @@ import { Sparkles, Eye, Store, Compass } from 'lucide-react'
 
 export function ShopGalleryShowcase() {
   const [activeIdx, setActiveIdx] = useState(0)
+  const [showWriteup, setShowWriteup] = useState(true)
 
   return (
     <div className="space-y-6">
       {/* Featured Main Interior View */}
-      <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-amber-500/30 group bg-neutral-950 aspect-[16/9] sm:aspect-[16/10] w-full transition-all duration-500">
+      <div 
+        onClick={() => setShowWriteup(!showWriteup)}
+        className="relative rounded-2xl overflow-hidden shadow-2xl border border-amber-500/30 group bg-neutral-950 aspect-[16/9] sm:aspect-[16/10] w-full transition-all duration-500 cursor-pointer select-none"
+      >
         <img
           src={shopImages[activeIdx].src}
           alt={shopImages[activeIdx].alt}
@@ -18,20 +22,21 @@ export function ShopGalleryShowcase() {
         />
         
         {/* Subtle Dark Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-90" />
+        <div className={`absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent transition-opacity duration-500 ${showWriteup ? 'opacity-90' : 'opacity-0 pointer-events-none'}`} />
 
         {/* Top Badges */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-amber-500/30 text-amber-300 text-xs font-mono tracking-wider">
+        <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
+          <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-amber-500/30 text-amber-300 text-xs font-mono tracking-wider transition-opacity duration-500 ${showWriteup ? 'opacity-100' : 'opacity-0'}`}>
             <Store size={13} /> Real Store Interior · Yenagoa
           </span>
-          <span className="text-xs text-neutral-300 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 font-mono">
-            {activeIdx + 1} / {shopImages.length}
+          <span className="text-xs text-neutral-300 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 font-mono flex items-center gap-1.5">
+            {showWriteup ? <EyeOff size={12} className="text-amber-400" /> : <Eye size={12} className="text-amber-400" />}
+            {showWriteup ? 'Tap to hide text' : 'Tap to show text'}
           </span>
         </div>
 
         {/* Floating Details Banner */}
-        <div className="absolute bottom-4 left-4 right-4 p-5 rounded-xl bg-black/80 backdrop-blur-md border border-white/15 text-white shadow-xl space-y-1">
+        <div className={`absolute bottom-4 left-4 right-4 p-5 rounded-xl bg-black/80 backdrop-blur-md border border-white/15 text-white shadow-xl space-y-1 transition-all duration-500 transform ${showWriteup ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
           <div className="flex items-center justify-between">
             <h4 className="font-serif font-bold text-xl text-amber-200">
               {shopImages[activeIdx].title}
@@ -44,6 +49,13 @@ export function ShopGalleryShowcase() {
             {shopImages[activeIdx].caption}
           </p>
         </div>
+
+        {/* Small floating hint when writeup is hidden */}
+        {!showWriteup && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-amber-500/40 text-amber-300 text-[10px] sm:text-xs font-medium flex items-center gap-1.5 animate-bounce z-10">
+            <Eye size={12} /> Tap to show text
+          </div>
+        )}
       </div>
 
       {/* Interactive Thumbnail Carousel Grid */}
