@@ -1,0 +1,4 @@
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
+import { Footer, SiteNav } from '@/components/site-shell'
+export default function AdminOrders(){return <><SiteNav/><main><header className="page-top"><span className="eyebrow">Operations</span><h1>Orders.</h1></header><section className="section"><div className="notice">Connect the provided backend to populate live orders, receipt thumbnails, and server-validated status actions.</div><div className="stats"><div className="stat"><strong>—</strong><span>Awaiting transfer</span></div><div className="stat"><strong>—</strong><span>Payment claimed</span></div><div className="stat"><strong>—</strong><span>Fulfilled</span></div></div><Link href="/admin/products" className="button">Manage products <ArrowRight size={16}/></Link></section></main><Footer/></>}
