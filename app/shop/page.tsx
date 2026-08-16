@@ -18,14 +18,14 @@ export default function ShopPage() {
 
   const add = useStore((s) => s.add)
 
-  // Fetch live products from Supabase
+  // Fetch live products from Supabase via API route
   useEffect(() => {
-    async function loadSupabaseProducts() {
+    async function loadProducts() {
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase.from('products').select('*')
-        if (data && data.length > 0) {
-          const mapped: Scent[] = data.map((p) => ({
+        const res = await fetch('/api/admin/products')
+        const data = await res.json()
+        if (data.products && data.products.length > 0) {
+          const mapped: Scent[] = data.products.map((p: any) => ({
             id: p.id,
             name: p.name,
             family: p.family,
@@ -39,10 +39,10 @@ export default function ShopPage() {
           setProductList(mapped)
         }
       } catch (err) {
-        console.warn('Could not fetch products from Supabase, using static catalog:', err)
+        console.warn('Could not fetch products, using static catalog:', err)
       }
     }
-    loadSupabaseProducts()
+    loadProducts()
   }, [])
 
   const families = useMemo(() => {

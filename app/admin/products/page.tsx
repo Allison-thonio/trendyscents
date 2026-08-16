@@ -16,15 +16,18 @@ import {
   Link as LinkIcon,
   CheckCircle2,
   DollarSign,
-  Tag
+  Tag,
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
-import { createClient } from '@/utils/supabase/client'
 import { naira, scents, Scent } from '@/lib/catalog'
 import type { ProductRow } from '@/lib/supabase/types'
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFamily, setSelectedFamily] = useState('All')
 
@@ -47,18 +50,18 @@ export default function AdminProductsPage() {
     description: ''
   })
 
-  const supabase = createClient()
-
   const fetchProducts = async () => {
     setLoading(true)
+    setErrorMessage(null)
     try {
-      const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-      if (data && data.length > 0) {
-        setProducts(data as ProductRow[])
+      const res = await fetch('/api/admin/products')
+      const data = await res.json()
+      if (data.products && data.products.length > 0) {
+        setProducts(data.products)
       } else {
         setProducts(scents as ProductRow[])
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error fetching products', e)
       setProducts(scents as ProductRow[])
     } finally {
@@ -81,7 +84,7 @@ export default function AdminProductsPage() {
         const canvas = document.createElement('canvas')
         let width = img.width
         let height = img.height
-        const maxDim = 1000
+        const maxDim = 800
 
         if (width > maxDim || height > maxDim) {
           if (width > height) {
@@ -98,7 +101,7 @@ export default function AdminProductsPage() {
         const ctx = canvas.getContext('2d')
         ctx?.drawImage(img, 0, 0, width, height)
 
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8)
         setImagePreview(compressedDataUrl)
         setFormData((prev) => ({ ...prev, image: compressedDataUrl }))
       }
@@ -114,10 +117,11 @@ export default function AdminProductsPage() {
     )
 
     try {
-      await supabase
-        .from('products')
-        .update({ available: updatedStatus })
-        .match({ id: product.id })
+      await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...product, available: updatedStatus })
+      })
     } catch (err) {
       console.error('Error updating availability', err)
     }
@@ -126,6 +130,9 @@ export default function AdminProductsPage() {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.name || !formData.price) return
+
+    setSaving(true)
+    setErrorMessage(null)
 
     const productId = editingProduct
       ? editingProduct.id
@@ -143,21 +150,37 @@ export default function AdminProductsPage() {
       description: formData.description || ''
     }
 
-    // Save to Supabase
     try {
-      await supabase.from('products').upsert(payload)
-    } catch (err) {
-      console.error('Supabase save error:', err)
-    }
+      const res = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
 
-    if (editingProduct) {
-      setProducts((prev) => prev.map((p) => (p.id === productId ? payload : p)))
-    } else {
-      setProducts((prev) => [payload, ...prev])
-    }
+      const data = await res.json()
 
-    setIsModalOpen(false)
-    setEditingProduct(null)
+      if (!res.ok || data.error) {
+        setErrorMessage(data.error || 'Failed to save product in database')
+        setSaving(false)
+        return
+      }
+
+      // Optimistically update & refetch
+      if (editingProduct) {
+        setProducts((prev) => prev.map((p) => (p.id === productId ? payload : p)))
+      } else {
+        setProducts((prev) => [payload, ...prev])
+      }
+
+      setIsModalOpen(false)
+      setEditingProduct(null)
+      fetchProducts()
+    } catch (err: any) {
+      console.error('Save product error:', err)
+      setErrorMessage(err?.message || 'Error saving product')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleDeleteProduct = async (id: string) => {
@@ -165,7 +188,7 @@ export default function AdminProductsPage() {
 
     setProducts((prev) => prev.filter((p) => p.id !== id))
     try {
-      await supabase.from('products').delete().match({ id })
+      await fetch(`/api/admin/products?id=${id}`, { method: 'DELETE' })
     } catch (err) {
       console.error('Error deleting product', err)
     }
@@ -173,6 +196,7 @@ export default function AdminProductsPage() {
 
   const openCreateModal = () => {
     setEditingProduct(null)
+    setErrorMessage(null)
     const initialImg = 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800&h=800&fit=crop&q=80'
     setImagePreview(null)
     setFormData({
@@ -191,6 +215,7 @@ export default function AdminProductsPage() {
 
   const openEditModal = (product: ProductRow) => {
     setEditingProduct(product)
+    setErrorMessage(null)
     setImagePreview(product.image)
     setFormData(product)
     setIsModalOpen(true)
@@ -350,6 +375,13 @@ export default function AdminProductsPage() {
                 <X size={20} />
               </button>
             </div>
+
+            {errorMessage && (
+              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
               
@@ -514,15 +546,23 @@ export default function AdminProductsPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-white text-xs font-mono"
+                  disabled={saving}
+                  className="px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-white text-xs font-mono disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-[#C8923C] hover:bg-[#D89A3E] text-[#0A0908] font-bold font-mono text-xs uppercase tracking-wider transition-all shadow"
+                  disabled={saving}
+                  className="px-5 py-2.5 rounded-xl bg-[#C8923C] hover:bg-[#D89A3E] text-[#0A0908] font-bold font-mono text-xs uppercase tracking-wider transition-all shadow flex items-center gap-2 disabled:opacity-50"
                 >
-                  Save Product
+                  {saving ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    'Save Product'
+                  )}
                 </button>
               </div>
             </form>
