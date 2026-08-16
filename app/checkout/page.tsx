@@ -56,12 +56,17 @@ export default function CheckoutPage() {
     }
   }
 
-  const handleCompleteOrder = () => {
+  const handleCompleteOrder = async () => {
+    const customerName = name || 'Valued Customer'
+    const customerPhone = phone || '08000000000'
+    const deliveryAddress = address || 'Isaac Boro Expressway, Yenagoa'
+
+    // 1. Local state update
     saveOrder({
       ref,
-      customerName: name || 'Valued Customer',
-      phone: phone || '08000000000',
-      address: address || 'Isaac Boro Expressway, Yenagoa',
+      customerName,
+      phone: customerPhone,
+      address: deliveryAddress,
       items: [...cart],
       total,
       receiptUrl: receiptPreview || undefined,
@@ -70,6 +75,42 @@ export default function CheckoutPage() {
       status: 'Payment Verification',
       etaMinutes: 25,
     })
+
+    // 2. Async sync to Supabase
+    try {
+      const { createClient } = await import('@/utils/supabase/client')
+      const supabase = createClient()
+      const { data: insertedOrder } = await supabase
+        .from('orders')
+        .insert({
+          order_number: ref,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          delivery_address: deliveryAddress,
+          total_amount: total,
+          payment_method: 'Bank Transfer',
+          payment_status: 'pending',
+          order_status: 'Payment Verification',
+          receipt_url: receiptPreview || null,
+          receipt_name: receiptFile?.name || 'Bank_Transfer_Receipt.jpg'
+        })
+        .select()
+        .single()
+
+      if (insertedOrder && cart.length > 0) {
+        const orderItemsPayload = cart.map((line) => ({
+          order_id: insertedOrder.id,
+          product_id: line.scent.id,
+          product_name: line.scent.name,
+          price: line.scent.price,
+          quantity: line.quantity
+        }))
+        await supabase.from('order_items').insert(orderItemsPayload)
+      }
+    } catch (e) {
+      console.warn('Supabase order sync background warning:', e)
+    }
+
     clearCart()
     setStep(3)
   }
@@ -196,7 +237,7 @@ export default function CheckoutPage() {
 
                   <button
                     type="submit"
-                    className="w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold font-mono text-sm uppercase tracking-wider transition-all duration-300 shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 hover:scale-[1.01]"
+                    className="w-full py-4 rounded-xl bg-[#C8923C] hover:bg-[#D89A3E] text-[#0A0908] font-bold font-mono text-sm uppercase tracking-wider transition-all duration-300 shadow-lg shadow-[#C8923C]/20 flex items-center justify-center gap-2 hover:scale-[1.01]"
                   >
                     <span>Continue to Payment & Receipt Upload</span>
                     <ArrowRight size={16} />
@@ -317,9 +358,9 @@ export default function CheckoutPage() {
                     <button
                       onClick={handleCompleteOrder}
                       disabled={!receiptFile}
-                      className={`w-2/3 py-3.5 rounded-xl text-neutral-950 font-bold font-mono text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                      className={`w-2/3 py-3.5 rounded-xl text-[#0A0908] font-bold font-mono text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
                         receiptFile
-                          ? 'bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/20 cursor-pointer'
+                          ? 'bg-[#C8923C] hover:bg-[#D89A3E] shadow-lg shadow-[#C8923C]/20 cursor-pointer'
                           : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700'
                       }`}
                     >

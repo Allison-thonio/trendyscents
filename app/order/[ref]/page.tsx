@@ -22,6 +22,7 @@ import {
 import { Footer, SiteNav } from '@/components/site-shell'
 import { useStore } from '@/lib/store'
 import { naira, storeLocation } from '@/lib/catalog'
+import { createClient } from '@/utils/supabase/client'
 
 export default function OrderTrackingPage({
   params
@@ -30,31 +31,62 @@ export default function OrderTrackingPage({
 }) {
   const { ref } = use(params)
   const store = useStore()
-  const order = store.orders[ref]
+  const localOrder = store.orders[ref]
 
-  // Default mock fallback if opened directly without local state
-  const orderDetails = order || {
+  const [dbOrder, setDbOrder] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch live order from Supabase
+  useEffect(() => {
+    async function loadOrder() {
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('order_number', ref)
+          .maybeSingle()
+
+        if (data) {
+          setDbOrder(data)
+        }
+      } catch (err) {
+        console.warn('Could not fetch order from Supabase:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadOrder()
+
+    // Poll every 10 seconds for real-time status updates from Admin
+    const interval = setInterval(loadOrder, 10000)
+    return () => clearInterval(interval)
+  }, [ref])
+
+  // Resolve details from DB or Local state fallback
+  const orderDetails = {
     ref,
-    customerName: 'Valued Customer',
-    phone: '080 1234 5678',
-    address: 'Isaac Boro Expressway, Yenagoa, Bayelsa State',
-    items: [],
-    total: 35000,
-    createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    status: 'Decant Pouring' as const,
+    customerName: dbOrder?.customer_name || localOrder?.customerName || 'Valued Customer',
+    phone: dbOrder?.customer_phone || localOrder?.phone || '080 1234 5678',
+    address: dbOrder?.delivery_address || localOrder?.address || 'Isaac Boro Expressway, Yenagoa, Bayelsa State',
+    total: dbOrder?.total_amount ? Number(dbOrder.total_amount) : localOrder?.total || 35000,
+    createdAt: dbOrder?.created_at ? new Date(dbOrder.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : localOrder?.createdAt || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: dbOrder?.order_status || localOrder?.status || 'Payment Verification',
     etaMinutes: 22,
-    receiptName: 'Bank_Transfer_Receipt.jpg'
+    receiptUrl: dbOrder?.receipt_url || localOrder?.receiptUrl || null,
+    receiptName: dbOrder?.receipt_name || localOrder?.receiptName || 'Bank_Transfer_Receipt.jpg'
   }
 
-  const [activeStep, setActiveStep] = useState(2) // 0: Placed, 1: Verified, 2: Decant Pouring, 3: En Route
-
-  useEffect(() => {
-    // Simulate real-time progress update
-    const timer = setTimeout(() => {
-      setActiveStep(3)
-    }, 12000)
-    return () => clearTimeout(timer)
-  }, [])
+  // Determine active step index
+  const statusStepMap: Record<string, number> = {
+    'Payment Verification': 0,
+    'Decant Pouring': 2,
+    'Out for Delivery': 3,
+    'Ready for Pickup': 3,
+    'Delivered': 3,
+    'Cancelled': 0
+  }
+  const activeStep = statusStepMap[orderDetails.status] ?? 1
 
   // Google Maps iframe src centered at Isaac Boro Expressway, Yenagoa
   const googleMapEmbedUrl = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15904.382419266155!2d6.3059421!3d4.9163329!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x106a050048eccd6f%3A0xf339d05ae6a61279!2sTrendy%20Scents!5e0!3m2!1sen!2sng!4v1700000000000!5m2!1sen!2sng`
@@ -136,7 +168,7 @@ export default function OrderTrackingPage({
                       </div>
                       <div>
                         <p className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
-                          Decant Dispatch Courier
+                          Decant Dispatch Status: {orderDetails.status}
                         </p>
                         <p className="text-xs text-neutral-300">
                           {activeStep >= 3 ? 'Courier en route to your location in Yenagoa' : 'Custom oil decants being measured at the bar'}
@@ -148,7 +180,7 @@ export default function OrderTrackingPage({
                       href={`https://wa.me/2348012345678?text=Hello%20Trendy%20Scents,%20checking%20status%20for%20order%20${ref}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-mono font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0"
+                      className="px-3.5 py-2 rounded-lg bg-[#C8923C] hover:bg-[#D89A3E] text-[#0A0908] text-xs font-mono font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0"
                     >
                       <MessageSquare size={13} /> Chat Courier
                     </a>
@@ -216,10 +248,10 @@ export default function OrderTrackingPage({
               <div className="p-6 rounded-2xl bg-neutral-900/90 border border-amber-500/30 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono uppercase text-amber-400 font-bold flex items-center gap-1.5">
-                    <FileText size={15} /> Payment Receipt Uploaded
+                    <FileText size={15} /> Payment Receipt
                   </span>
                   <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20 flex items-center gap-1">
-                    <CheckCircle2 size={12} /> Confirmed
+                    <CheckCircle2 size={12} /> {dbOrder?.payment_status === 'verified' ? 'Verified' : 'Attached'}
                   </span>
                 </div>
 
@@ -235,7 +267,7 @@ export default function OrderTrackingPage({
                         href={orderDetails.receiptUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded-lg bg-amber-500 text-neutral-950 font-mono text-xs font-bold shadow"
+                        className="px-3 py-1.5 rounded-lg bg-[#C8923C] text-[#0A0908] font-mono text-xs font-bold shadow"
                       >
                         View Full Image
                       </a>
@@ -248,7 +280,7 @@ export default function OrderTrackingPage({
                     </div>
                     <div className="overflow-hidden">
                       <p className="text-xs font-mono text-white font-bold truncate">
-                        {orderDetails.receiptName || 'Bank_Transfer_Receipt.jpg'}
+                        {orderDetails.receiptName}
                       </p>
                       <p className="text-[11px] font-mono text-neutral-400">Attached to Order Reference #{ref}</p>
                     </div>
@@ -294,7 +326,7 @@ export default function OrderTrackingPage({
                     href={`https://wa.me/2348012345678?text=Hi%20Trendy%20Scents,%20my%20order%20ref%20is%20${ref}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-1/2 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1.5 transition-colors shadow-lg shadow-amber-500/20"
+                    className="w-1/2 py-3 rounded-xl bg-[#C8923C] hover:bg-[#D89A3E] text-[#0A0908] text-xs font-mono uppercase tracking-wider font-bold flex items-center justify-center gap-1.5 transition-colors shadow-lg shadow-[#C8923C]/20"
                   >
                     <MessageSquare size={14} /> WhatsApp
                   </a>

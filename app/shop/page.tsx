@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Search, Sparkles, Plus, Check, ShieldCheck, Droplet, Package, Info, ArrowRight } from 'lucide-react'
 import { CartDrawer, Footer, SiteNav, DripMark } from '@/components/site-shell'
 import { useStore } from '@/lib/store'
-import { scents, naira, decantSizes, shopDetails, Scent } from '@/lib/catalog'
+import { scents as staticScents, naira, decantSizes, shopDetails, Scent } from '@/lib/catalog'
 import { ShopGalleryShowcase } from '@/components/shop-gallery-showcase'
+import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
 
 export default function ShopPage() {
+  const [productList, setProductList] = useState<Scent[]>(staticScents)
   const [selectedFamily, setSelectedFamily] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSizes, setSelectedSizes] = useState<Record<string, number>>({})
@@ -16,12 +18,39 @@ export default function ShopPage() {
 
   const add = useStore((s) => s.add)
 
-  const families = useMemo(() => {
-    return ['All', ...Array.from(new Set(scents.map((s) => s.family)))]
+  // Fetch live products from Supabase
+  useEffect(() => {
+    async function loadSupabaseProducts() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.from('products').select('*')
+        if (data && data.length > 0) {
+          const mapped: Scent[] = data.map((p) => ({
+            id: p.id,
+            name: p.name,
+            family: p.family,
+            notes: p.notes,
+            price: Number(p.price),
+            available: p.available,
+            tone: p.tone || 'amber',
+            image: p.image,
+            description: p.description || undefined
+          }))
+          setProductList(mapped)
+        }
+      } catch (err) {
+        console.warn('Could not fetch products from Supabase, using static catalog:', err)
+      }
+    }
+    loadSupabaseProducts()
   }, [])
 
+  const families = useMemo(() => {
+    return ['All', ...Array.from(new Set(productList.map((s) => s.family)))]
+  }, [productList])
+
   const filteredScents = useMemo(() => {
-    return scents.filter((s) => {
+    return productList.filter((s) => {
       const matchesFamily = selectedFamily === 'All' || s.family === selectedFamily
       const matchesQuery =
         searchQuery.trim() === '' ||
@@ -30,7 +59,7 @@ export default function ShopPage() {
         (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
       return matchesFamily && matchesQuery
     })
-  }, [selectedFamily, searchQuery])
+  }, [productList, selectedFamily, searchQuery])
 
   const handleSizeChange = (scentId: string, ml: number) => {
     setSelectedSizes((prev) => ({ ...prev, [scentId]: ml }))
@@ -116,7 +145,7 @@ export default function ShopPage() {
             {/* Category Filter Pills */}
             <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none">
               {families.map((f) => {
-                const count = f === 'All' ? scents.length : scents.filter((s) => s.family === f).length
+                const count = f === 'All' ? productList.length : productList.filter((s) => s.family === f).length
                 const isActive = selectedFamily === f
                 return (
                   <button
@@ -263,7 +292,7 @@ export default function ShopPage() {
                           isJustAdded
                             ? 'bg-emerald-500 text-neutral-950'
                             : scent.available
-                            ? 'bg-amber-500 hover:bg-amber-400 text-neutral-950 shadow-md shadow-amber-500/20 hover:scale-[1.03] active:scale-[0.97]'
+                            ? 'bg-[#C8923C] hover:bg-[#D89A3E] text-[#0A0908] shadow-md shadow-[#C8923C]/20 hover:scale-[1.02] active:scale-[0.98]'
                             : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
                         }`}
                       >
