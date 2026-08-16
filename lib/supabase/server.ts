@@ -1,13 +1,15 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export async function createClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const DEFAULT_URL = 'https://ldctbkxvcktjgpmhqhco.supabase.co'
+const DEFAULT_KEY = 'sb_publishable_RfzBnfcv1iTc5OtVwML_rQ_F_4gV-9s'
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return null
-  }
+export async function createClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_URL
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    DEFAULT_KEY
 
   const cookieStore = await cookies()
 
@@ -25,8 +27,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing sessions.
+            // Ignore in Server Component
           }
         },
       },
