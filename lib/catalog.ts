@@ -12,6 +12,17 @@ export type Scent = {
 
 export const scents: Scent[] = [
   {
+    id: 'caramello-velvet',
+    name: 'Caramello Velvet',
+    family: 'Gourmand',
+    notes: 'Toasted Caramel · Amber · Bourbon Vanilla',
+    price: 9500,
+    available: true,
+    tone: 'amber',
+    image: '/images/caramello-velvet.jpg',
+    description: 'An intoxicating gourmand creation featuring warm toasted caramel, rich Cambodian amber, and smooth bourbon vanilla extract.'
+  },
+  {
     id: 'oud-royale',
     name: 'Oud Royale',
     family: 'Oud',

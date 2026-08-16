@@ -112,6 +112,17 @@ create policy "Allow all actions on order_items"
 insert into public.products (id, name, family, notes, price, available, tone, image, description)
 values
   (
+    'caramello-velvet',
+    'Caramello Velvet',
+    'Gourmand',
+    'Toasted Caramel · Amber · Bourbon Vanilla',
+    9500,
+    true,
+    'amber',
+    '/images/caramello-velvet.jpg',
+    'An intoxicating gourmand creation featuring warm toasted caramel, rich Cambodian amber, and smooth bourbon vanilla extract.'
+  ),
+  (
     'oud-royale',
     'Oud Royale',
     'Oud',
