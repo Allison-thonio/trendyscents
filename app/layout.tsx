@@ -8,19 +8,22 @@ const cormorant = Cormorant_Garamond({
   weight: ['300', '400', '500', '600', '700'],
   style: ['italic', 'normal'],
   variable: '--font-serif',
-  display: 'swap'
+  display: 'swap',
+  adjustFontFallback: false
 })
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
-  display: 'swap'
+  display: 'swap',
+  adjustFontFallback: false
 })
 
 const jetbrains = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
-  display: 'swap'
+  display: 'swap',
+  adjustFontFallback: false
 })
 
 export const metadata: Metadata = {

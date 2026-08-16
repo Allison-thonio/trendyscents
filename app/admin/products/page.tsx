@@ -11,10 +11,12 @@ import {
   Sparkles,
   RefreshCw,
   Image as ImageIcon,
+  UploadCloud,
+  Camera,
+  Link as LinkIcon,
+  CheckCircle2,
   DollarSign,
-  Tag,
-  Eye,
-  EyeOff
+  Tag
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { naira, scents, Scent } from '@/lib/catalog'
@@ -29,6 +31,8 @@ export default function AdminProductsPage() {
   // Modal / Form state
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null)
+  const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file')
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   // Form Fields
   const [formData, setFormData] = useState<Partial<ProductRow>>({
@@ -65,6 +69,43 @@ export default function AdminProductsPage() {
   useEffect(() => {
     fetchProducts()
   }, [])
+
+  // Compress & convert selected file to optimized Data URL
+  const handleImageFileUpload = (file: File) => {
+    if (!file || !file.type.startsWith('image/')) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        const maxDim = 1000
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          } else {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        setImagePreview(compressedDataUrl)
+        setFormData((prev) => ({ ...prev, image: compressedDataUrl }))
+      }
+      img.src = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleToggleAvailability = async (product: ProductRow) => {
     const updatedStatus = !product.available
@@ -132,6 +173,8 @@ export default function AdminProductsPage() {
 
   const openCreateModal = () => {
     setEditingProduct(null)
+    const initialImg = 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800&h=800&fit=crop&q=80'
+    setImagePreview(null)
     setFormData({
       id: '',
       name: '',
@@ -140,7 +183,7 @@ export default function AdminProductsPage() {
       price: 8500,
       available: true,
       tone: 'amber',
-      image: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800&h=800&fit=crop&q=80',
+      image: initialImg,
       description: ''
     })
     setIsModalOpen(true)
@@ -148,6 +191,7 @@ export default function AdminProductsPage() {
 
   const openEditModal = (product: ProductRow) => {
     setEditingProduct(product)
+    setImagePreview(product.image)
     setFormData(product)
     setIsModalOpen(true)
   }
@@ -163,7 +207,7 @@ export default function AdminProductsPage() {
   })
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-sans">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-neutral-800">
@@ -294,8 +338,8 @@ export default function AdminProductsPage() {
       {/* Add / Edit Product Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative max-w-xl w-full bg-neutral-900 border border-neutral-700 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="relative max-w-xl w-full bg-neutral-900 border border-neutral-700 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3 sticky top-0 bg-neutral-900 z-10">
               <h2 className="text-xl font-serif font-bold text-white">
                 {editingProduct ? 'Edit Perfume Oil' : 'Add New Perfume Oil'}
               </h2>
@@ -308,6 +352,88 @@ export default function AdminProductsPage() {
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
+              
+              {/* Product Photo Upload Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-amber-300 uppercase tracking-wider block font-bold">
+                    Main Product Image *
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setUploadMode('file')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-mono transition-colors flex items-center gap-1 ${
+                        uploadMode === 'file'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                          : 'bg-neutral-950 text-neutral-400 border border-neutral-800'
+                      }`}
+                    >
+                      <Camera size={12} /> Upload Photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUploadMode('url')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-mono transition-colors flex items-center gap-1 ${
+                        uploadMode === 'url'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                          : 'bg-neutral-950 text-neutral-400 border border-neutral-800'
+                      }`}
+                    >
+                      <LinkIcon size={12} /> Paste Link
+                    </button>
+                  </div>
+                </div>
+
+                {uploadMode === 'file' ? (
+                  <label className="border-2 border-dashed border-neutral-700 hover:border-amber-500/80 rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer bg-neutral-950/70 hover:bg-neutral-950 transition-all text-center">
+                    {imagePreview || formData.image ? (
+                      <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden border border-neutral-700">
+                        <img
+                          src={imagePreview || formData.image}
+                          alt="Product preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-xs font-mono text-white font-bold bg-black/60">
+                          Click to Change Photo
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                          <UploadCloud size={20} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-white">Tap to upload photo from Phone / Camera</p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5">JPEG, PNG, WEBP automatically optimized</p>
+                        </div>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleImageFileUpload(e.target.files[0])
+                      }}
+                    />
+                  </label>
+                ) : (
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      value={formData.image || ''}
+                      onChange={(e) => {
+                        setFormData({ ...formData, image: e.target.value })
+                        setImagePreview(e.target.value)
+                      }}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white"
+                    />
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-mono text-amber-300 uppercase">Scent Name *</label>
@@ -374,16 +500,6 @@ export default function AdminProductsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-mono text-amber-300 uppercase">Image URL</label>
-                <input
-                  value={formData.image || ''}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white"
-                />
-              </div>
-
-              <div className="space-y-1">
                 <label className="text-xs font-mono text-amber-300 uppercase">Description</label>
                 <textarea
                   rows={2}
@@ -394,7 +510,7 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              <div className="pt-3 flex justify-end gap-3">
+              <div className="pt-3 flex justify-end gap-3 border-t border-neutral-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
