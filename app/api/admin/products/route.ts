@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { scents } from '@/lib/catalog'
 import type { ProductRow } from '@/lib/supabase/types'
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required product fields (id, name, price)' }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
 
     // Upsert product into Supabase products table
     const { data, error } = await supabase
@@ -78,7 +78,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Product ID required' }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
     const { error } = await supabase.from('products').delete().match({ id })
 
     if (error) {

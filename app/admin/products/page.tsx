@@ -36,6 +36,7 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null)
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file')
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isCompressing, setIsCompressing] = useState(false)
 
   // Form Fields
   const [formData, setFormData] = useState<Partial<ProductRow>>({
@@ -77,6 +78,7 @@ export default function AdminProductsPage() {
   const handleImageFileUpload = (file: File) => {
     if (!file || !file.type.startsWith('image/')) return
 
+    setIsCompressing(true)
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
@@ -104,9 +106,12 @@ export default function AdminProductsPage() {
         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8)
         setImagePreview(compressedDataUrl)
         setFormData((prev) => ({ ...prev, image: compressedDataUrl }))
+        setIsCompressing(false)
       }
+      img.onerror = () => setIsCompressing(false)
       img.src = e.target?.result as string
     }
+    reader.onerror = () => setIsCompressing(false)
     reader.readAsDataURL(file)
   }
 
@@ -419,7 +424,12 @@ export default function AdminProductsPage() {
 
                 {uploadMode === 'file' ? (
                   <label className="border-2 border-dashed border-neutral-700 hover:border-amber-500/80 rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer bg-neutral-950/70 hover:bg-neutral-950 transition-all text-center">
-                    {imagePreview || formData.image ? (
+                    {isCompressing ? (
+                      <div className="flex flex-col items-center justify-center gap-3 py-6">
+                        <Loader2 className="animate-spin text-amber-500" size={24} />
+                        <span className="text-xs font-mono text-amber-400">Compressing Image...</span>
+                      </div>
+                    ) : imagePreview || formData.image ? (
                       <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden border border-neutral-700">
                         <img
                           src={imagePreview || formData.image}

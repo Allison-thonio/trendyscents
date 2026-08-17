@@ -18,14 +18,20 @@ export default function ShopPage() {
 
   const add = useStore((s) => s.add)
 
-  // Fetch live products from Supabase via API route
+  // Fetch live products from Supabase directly
   useEffect(() => {
     async function loadProducts() {
       try {
-        const res = await fetch('/api/admin/products')
-        const data = await res.json()
-        if (data.products && data.products.length > 0) {
-          const mapped: Scent[] = data.products.map((p: any) => ({
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+
+        if (data && data.length > 0) {
+          const mapped: Scent[] = data.map((p: any) => ({
             id: p.id,
             name: p.name,
             family: p.family,
@@ -210,10 +216,14 @@ export default function ShopPage() {
                   >
                     <div>
                       {/* Image Header */}
-                      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-950">
+                      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-800/40 animate-pulse">
                         <img
                           src={scent.image}
                           alt={scent.name}
+                          onLoad={(e) => {
+                            (e.target as HTMLImageElement).parentElement?.classList.remove('animate-pulse', 'bg-neutral-800/40')
+                            ;(e.target as HTMLImageElement).parentElement?.classList.add('bg-neutral-950')
+                          }}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent opacity-90" />
@@ -290,7 +300,7 @@ export default function ShopPage() {
                         disabled={!scent.available}
                         className={`px-4 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all duration-300 flex items-center gap-1.5 ${
                           isJustAdded
-                            ? 'bg-emerald-500 text-neutral-950'
+                            ? 'bg-amber-400 text-amber-950 shadow-md shadow-amber-400/20'
                             : scent.available
                             ? 'bg-[#C8923C] hover:bg-[#D89A3E] text-[#0A0908] shadow-md shadow-[#C8923C]/20 hover:scale-[1.02] active:scale-[0.98]'
                             : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'

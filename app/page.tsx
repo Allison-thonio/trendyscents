@@ -30,8 +30,8 @@ export default function Page() {
             <p className="section-intro font-medium" style={{ color: '#FFFFFF', opacity: 1, textShadow: '0 2px 10px rgba(0,0,0,0.9)' }}>
               Your signature scent, decanted with care. Amber oils, honest advice, and a little room to find yourself.
             </p>
-            <Link href="/shop" className="button button-amber">
-              Explore the bar <ArrowRight size={16} />
+            <Link href="/shop" className="button button-amber animate-pulse hover:animate-none relative group">
+              <span>Explore the bar</span> <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
           <div className="hero-foot">

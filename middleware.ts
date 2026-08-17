@@ -4,10 +4,10 @@ import { updateSession } from "@/utils/supabase/middleware";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  const isAuth = request.cookies.get('ts-admin-auth')?.value === 'true';
+
   // Protect Admin Dashboard Routes
   if (pathname.startsWith('/admin')) {
-    const isAuth = request.cookies.get('ts-admin-auth')?.value === 'true';
-
     if (pathname === '/admin/login') {
       if (isAuth) {
         return NextResponse.redirect(new URL('/admin', request.url));
@@ -16,6 +16,13 @@ export async function middleware(request: NextRequest) {
       if (!isAuth) {
         return NextResponse.redirect(new URL('/admin/login', request.url));
       }
+    }
+  }
+
+  // Protect Admin API Routes (Except Login)
+  if (pathname.startsWith('/api/admin') && !pathname.startsWith('/api/admin/login')) {
+    if (!isAuth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }
 
