@@ -6,7 +6,13 @@ import type { ProductRow } from '@/lib/supabase/types'
 // GET /api/admin/products
 export async function GET() {
   try {
-    const supabase = await createClient()
+    let supabase
+    try {
+      supabase = await createAdminClient()
+    } catch {
+      supabase = await createClient()
+    }
+
     const { data, error } = await supabase
       .from('products')
       .select('*')

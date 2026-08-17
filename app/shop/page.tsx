@@ -18,26 +18,21 @@ export default function ShopPage() {
 
   const add = useStore((s) => s.add)
 
-  // Fetch live products from Supabase directly
+  // Fetch live products from fast server API /api/products
   useEffect(() => {
     async function loadProducts() {
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .order('created_at', { ascending: false })
+        const res = await fetch('/api/products')
+        const data = await res.json()
 
-        if (error) throw error
-
-        if (data && data.length > 0) {
-          const mapped: Scent[] = data.map((p: any) => ({
+        if (data.products && data.products.length > 0) {
+          const mapped: Scent[] = data.products.map((p: any) => ({
             id: p.id,
             name: p.name,
             family: p.family,
             notes: p.notes,
             price: Number(p.price),
-            available: p.available,
+            available: p.available !== false,
             tone: p.tone || 'amber',
             image: p.image,
             description: p.description || undefined
@@ -45,7 +40,7 @@ export default function ShopPage() {
           setProductList(mapped)
         }
       } catch (err) {
-        console.warn('Could not fetch products, using static catalog:', err)
+        console.warn('Could not fetch products API, using static catalog:', err)
       }
     }
     loadProducts()

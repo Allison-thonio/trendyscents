@@ -40,33 +40,17 @@ function OrdersContent() {
 
   const localOrders = useStore((s) => s.orders)
   const saveOrder = useStore((s) => s.saveOrder)
-  const supabase = createClient()
 
   const fetchOrders = async () => {
     setLoading(true)
     try {
-      // 1. Fetch from Supabase
-      const { data: dbOrders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false })
+      // 1. Fetch live orders & items from Server API Route /api/admin/orders
+      const res = await fetch('/api/admin/orders')
+      const data = await res.json()
 
-      // Fetch items if any
-      const { data: dbItems } = await supabase
-        .from('order_items')
-        .select('*')
-
-      if (dbItems) {
-        const map: Record<string, OrderItemRow[]> = {}
-        dbItems.forEach((item) => {
-          if (!map[item.order_id]) map[item.order_id] = []
-          map[item.order_id].push(item)
-        })
-        setItemsMap(map)
-      }
-
-      if (dbOrders && dbOrders.length > 0) {
-        setOrders(dbOrders as OrderRow[])
+      if (data.orders && data.orders.length > 0) {
+        setOrders(data.orders)
+        if (data.itemsMap) setItemsMap(data.itemsMap)
       } else {
         // Fallback to local store orders
         const fallbackList: OrderRow[] = Object.values(localOrders).map((o) => ({
@@ -77,7 +61,7 @@ function OrdersContent() {
           delivery_address: o.address,
           total_amount: o.total,
           payment_method: 'Bank Transfer',
-          payment_status: o.status === 'Payment Verification' ? 'pending' : 'verified',
+          payment_status: o.status === 'Waiting to confirm receipt' ? 'pending' : 'verified',
           order_status: o.status,
           receipt_url: o.receiptUrl || null,
           receipt_name: o.receiptName || null,
@@ -98,20 +82,18 @@ function OrdersContent() {
 
   // Handle status update
   const handleUpdateStatus = async (orderId: string, orderNum: string, newStatus: OrderRow['order_status']) => {
-    const isPaymentVerified = newStatus !== 'Payment Verification' && newStatus !== 'Cancelled'
+    const isPaymentVerified = newStatus !== 'Waiting to confirm receipt' && newStatus !== 'Cancelled'
     const newPaymentStatus = isPaymentVerified ? 'verified' : newStatus === 'Cancelled' ? 'failed' : 'pending'
 
-    // Update in Supabase
+    // Update in Supabase via /api/admin/orders API route
     try {
-      await supabase
-        .from('orders')
-        .update({
-          order_status: newStatus,
-          payment_status: newPaymentStatus
-        })
-        .match({ order_number: orderNum })
+      await fetch('/api/admin/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, orderNumber: orderNum, newStatus })
+      })
     } catch (err) {
-      console.error('Supabase update failed:', err)
+      console.error('API order update failed:', err)
     }
 
     // Also update local Zustand store for instantaneous sync
@@ -145,7 +127,7 @@ function OrdersContent() {
   })
 
   const statusOptions: OrderRow['order_status'][] = [
-    'Payment Verification',
+    'Waiting to confirm receipt',
     'Decant Pouring',
     'Out for Delivery',
     'Ready for Pickup',
@@ -277,6 +259,23 @@ function OrdersContent() {
                           {naira(Number(order.total_amount))}
                         </strong>
                       </div>
+
+                      {/* Prominent Action Button for Receipt Confirmation */}
+                      {order.order_status === 'Waiting to confirm receipt' && (
+                        <button
+                          onClick={() =>
+                            handleUpdateStatus(
+                              order.id,
+                              order.order_number,
+                              'Decant Pouring'
+                            )
+                          }
+                          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs font-mono shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5 animate-pulse"
+                        >
+                          <CheckCircle2 size={15} />
+                          Confirm Receipt & Start Decant
+                        </button>
+                      )}
 
                       {/* Status Selector Dropdown */}
                       <select

@@ -58,8 +58,8 @@ export default function OrderTrackingPage({
     }
     loadOrder()
 
-    // Poll every 10 seconds for real-time status updates from Admin
-    const interval = setInterval(loadOrder, 10000)
+    // Poll every 4 seconds for real-time status updates from Admin
+    const interval = setInterval(loadOrder, 4000)
     return () => clearInterval(interval)
   }, [ref])
 
@@ -71,7 +71,7 @@ export default function OrderTrackingPage({
     address: dbOrder?.delivery_address || localOrder?.address || 'Isaac Boro Expressway, Yenagoa, Bayelsa State',
     total: dbOrder?.total_amount ? Number(dbOrder.total_amount) : localOrder?.total || 35000,
     createdAt: dbOrder?.created_at ? new Date(dbOrder.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : localOrder?.createdAt || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    status: dbOrder?.order_status || localOrder?.status || 'Payment Verification',
+    status: dbOrder?.order_status || localOrder?.status || 'Waiting to confirm receipt',
     etaMinutes: 22,
     receiptUrl: dbOrder?.receipt_url || localOrder?.receiptUrl || null,
     receiptName: dbOrder?.receipt_name || localOrder?.receiptName || 'Bank_Transfer_Receipt.jpg'
@@ -79,11 +79,12 @@ export default function OrderTrackingPage({
 
   // Determine active step index
   const statusStepMap: Record<string, number> = {
-    'Payment Verification': 0,
+    'Waiting to confirm receipt': 1,
+    'Payment Verification': 1,
     'Decant Pouring': 2,
     'Out for Delivery': 3,
     'Ready for Pickup': 3,
-    'Delivered': 3,
+    'Delivered': 4,
     'Cancelled': 0
   }
   const activeStep = statusStepMap[orderDetails.status] ?? 1
@@ -187,6 +188,34 @@ export default function OrderTrackingPage({
                   </div>
                 </div>
               </div>
+
+              {/* Receipt Confirmation Status Banner */}
+              {orderDetails.status === 'Waiting to confirm receipt' ? (
+                <div className="p-5 rounded-2xl bg-amber-950/40 border border-amber-500/40 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-300 font-mono font-bold text-sm">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping inline-block" />
+                    <span>Waiting for Admin to Confirm Receipt</span>
+                  </div>
+                  <p className="text-xs text-neutral-300 leading-relaxed font-mono">
+                    Your order reference <strong className="text-amber-300">#{ref}</strong> and receipt screenshot have been submitted.
+                    Admin is reviewing your receipt. Once confirmed, order tracking will automatically start and step forward.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5 justify-center shrink-0">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-mono font-bold text-emerald-300 uppercase">
+                      Receipt Confirmed by Admin
+                    </p>
+                    <p className="text-xs text-neutral-300 font-mono">
+                      Admin verified your bank transfer. Decant pouring and dispatch are in progress.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Real-time Order Progress Timeline */}
               <div className="p-6 rounded-2xl bg-neutral-900/90 border border-neutral-800 space-y-6">

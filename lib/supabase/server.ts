@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createClientFromJS } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 const DEFAULT_URL = 'https://ldctbkxvcktjgpmhqhco.supabase.co'
@@ -43,26 +44,11 @@ export async function createAdminClient() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing. Please add it to your environment variables.')
   }
 
-  const cookieStore = await cookies()
-
-  return createServerClient(
-    supabaseUrl,
-    supabaseServiceKey,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Ignore in Server Component
-          }
-        },
-      },
+  // Fast direct client without session/cookie overhead
+  return createClientFromJS(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
     }
-  )
+  })
 }

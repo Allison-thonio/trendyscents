@@ -16,7 +16,7 @@ export type OrderRecord = {
   receiptUrl?: string;
   receiptName?: string;
   createdAt: string;
-  status: 'Payment Verification' | 'Decant Pouring' | 'Out for Delivery' | 'Ready for Pickup';
+  status: 'Waiting to confirm receipt' | 'Payment Verification' | 'Decant Pouring' | 'Out for Delivery' | 'Ready for Pickup' | 'Delivered' | 'Cancelled';
   etaMinutes: number;
 }
 

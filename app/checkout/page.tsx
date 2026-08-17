@@ -37,7 +37,6 @@ export default function CheckoutPage() {
     if (!file) return
     setUploadError('')
 
-    // Size limit check (10MB)
     if (file.size > 10 * 1024 * 1024) {
       setUploadError('File size exceeds 10MB limit.')
       return
@@ -47,8 +46,34 @@ export default function CheckoutPage() {
 
     if (file.type.startsWith('image/')) {
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setReceiptPreview(reader.result as string)
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          let width = img.width
+          let height = img.height
+          const maxDim = 800
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width)
+              width = maxDim
+            } else {
+              width = Math.round((width * maxDim) / height)
+              height = maxDim
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75)
+          setReceiptPreview(compressedDataUrl)
+        }
+        img.onerror = () => setReceiptPreview(e.target?.result as string)
+        img.src = e.target?.result as string
       }
       reader.readAsDataURL(file)
     } else {
@@ -72,48 +97,34 @@ export default function CheckoutPage() {
       receiptUrl: receiptPreview || undefined,
       receiptName: receiptFile?.name || 'Bank_Transfer_Receipt.jpg',
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'Payment Verification',
+      status: 'Waiting to confirm receipt',
       etaMinutes: 25,
     })
 
-    // 2. Async sync to Supabase
+    // 2. Submit to server API route /api/orders (uses admin client / service key to reliably persist)
     try {
-      const { createClient } = await import('@/utils/supabase/client')
-      const supabase = createClient()
-      const { data: insertedOrder } = await supabase
-        .from('orders')
-        .insert({
-          order_number: ref,
-          customer_name: customerName,
-          customer_phone: customerPhone,
-          delivery_address: deliveryAddress,
-          total_amount: total,
-          payment_method: 'Bank Transfer',
-          payment_status: 'pending',
-          order_status: 'Payment Verification',
-          receipt_url: receiptPreview || null,
-          receipt_name: receiptFile?.name || 'Bank_Transfer_Receipt.jpg'
+      await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ref,
+          customerName,
+          phone: customerPhone,
+          address: deliveryAddress,
+          total,
+          receiptUrl: receiptPreview || null,
+          receiptName: receiptFile?.name || 'Bank_Transfer_Receipt.jpg',
+          items: cart
         })
-        .select()
-        .single()
-
-      if (insertedOrder && cart.length > 0) {
-        const orderItemsPayload = cart.map((line) => ({
-          order_id: insertedOrder.id,
-          product_id: line.scent.id,
-          product_name: line.scent.name,
-          price: line.scent.price,
-          quantity: line.quantity
-        }))
-        await supabase.from('order_items').insert(orderItemsPayload)
-      }
+      })
     } catch (e) {
-      console.warn('Supabase order sync background warning:', e)
+      console.warn('API order sync background error:', e)
     }
 
     clearCart()
     setStep(3)
   }
+
 
   return (
     <>

@@ -23,7 +23,7 @@ export type OrderRow = {
   total_amount: number;
   payment_method: string;
   payment_status: 'pending' | 'verified' | 'failed';
-  order_status: 'Payment Verification' | 'Decant Pouring' | 'Out for Delivery' | 'Ready for Pickup' | 'Delivered' | 'Cancelled';
+  order_status: 'Waiting to confirm receipt' | 'Payment Verification' | 'Decant Pouring' | 'Out for Delivery' | 'Ready for Pickup' | 'Delivered' | 'Cancelled';
   receipt_url?: string | null;
   receipt_name?: string | null;
   notes?: string | null;
