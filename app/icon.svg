@@ -15,24 +15,13 @@
     </filter>
   </defs>
 
-  <!-- Background Circle -->
   <circle cx="256" cy="256" r="240" fill="url(#bg)" stroke="url(#gold)" stroke-width="8" />
-
-  <!-- Perfume Atomizer Cap & Spray Pump -->
   <rect x="232" y="90" width="48" height="30" rx="4" fill="url(#gold)" />
   <rect x="216" y="120" width="80" height="24" rx="6" fill="url(#gold)" />
   <rect x="240" y="144" width="32" height="28" fill="url(#gold)" />
-
-  <!-- Bottle Shoulder & Main Body -->
   <path d="M 160 200 C 160 172 172 168 200 168 L 312 168 C 340 168 352 172 352 200 L 352 384 C 352 416 336 432 304 432 L 208 432 C 176 432 160 416 160 384 Z" fill="none" stroke="url(#gold)" stroke-width="14" stroke-linejoin="round" />
-
-  <!-- Liquid Fill Glow Level -->
   <path d="M 174 270 C 210 260 302 280 338 270 L 338 380 C 338 400 326 418 300 418 L 212 418 C 186 418 174 400 174 380 Z" fill="url(#gold)" opacity="0.35" />
-
-  <!-- TS Monogram Insignia inside Bottle -->
   <text x="256" y="340" font-family="'Cormorant Garamond', 'Georgia', serif" font-size="76" font-weight="700" fill="url(#gold)" text-anchor="middle" letter-spacing="4">TS</text>
-
-  <!-- Decorative Sparkle Dots -->
   <circle cx="140" cy="140" r="6" fill="url(#gold)" filter="url(#glow)" />
   <circle cx="372" cy="130" r="9" fill="url(#gold)" filter="url(#glow)" />
   <circle cx="380" cy="360" r="5" fill="url(#gold)" filter="url(#glow)" />
