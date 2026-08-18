@@ -22,6 +22,31 @@ export async function GET() {
       return NextResponse.json({ error: ordersError.message }, { status: 500 })
     }
 
+    // Parse notes JSON to extract receipt_url, receipt_name, customer notes
+    const parsedOrders = (dbOrders || []).map((o: any) => {
+      let receiptUrl = o.receipt_url || null
+      let receiptName = o.receipt_name || null
+      let parsedNote = o.notes || ''
+
+      if (o.notes && typeof o.notes === 'string' && o.notes.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(o.notes)
+          if (parsed.receiptUrl) receiptUrl = parsed.receiptUrl
+          if (parsed.receiptName) receiptName = parsed.receiptName
+          if (parsed.customerNote) parsedNote = parsed.customerNote
+        } catch {
+          // ignore json parse error
+        }
+      }
+
+      return {
+        ...o,
+        receipt_url: receiptUrl,
+        receipt_name: receiptName,
+        customer_note: parsedNote
+      }
+    })
+
     const { data: dbItems, error: itemsError } = await supabase
       .from('order_items')
       .select('*')
@@ -36,7 +61,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      orders: dbOrders as OrderRow[],
+      orders: parsedOrders,
       itemsMap
     })
   } catch (err: any) {
@@ -44,6 +69,7 @@ export async function GET() {
     return NextResponse.json({ error: err?.message || 'Server error fetching orders' }, { status: 500 })
   }
 }
+
 
 // POST /api/admin/orders - Update order status & payment status
 export async function POST(req: NextRequest) {

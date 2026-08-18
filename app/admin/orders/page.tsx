@@ -313,82 +313,127 @@ function OrdersContent() {
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                         
                         {/* Left: Customer & Delivery Info */}
-                        <div className="md:col-span-6 space-y-3">
+                        <div className="md:col-span-6 space-y-4">
                           <h4 className="text-xs font-mono text-amber-400 uppercase tracking-wider font-bold">
                             Delivery & Customer Contact
                           </h4>
-                          <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 space-y-2 text-xs font-mono">
+                          <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 space-y-2.5 text-xs font-mono">
                             <p className="text-neutral-300">
-                              <strong className="text-white">Address:</strong> {order.delivery_address || 'Yenagoa Bar Pickup'}
+                              <strong className="text-white">Customer Name:</strong> {order.customer_name}
+                            </p>
+                            {order.customer_email && (
+                              <p className="text-neutral-300">
+                                <strong className="text-white">Email:</strong> {order.customer_email}
+                              </p>
+                            )}
+                            <p className="text-neutral-300">
+                              <strong className="text-white">Delivery Address:</strong> {order.delivery_address || 'Yenagoa Bar Pickup'}
                             </p>
                             <p className="text-neutral-300">
                               <strong className="text-white">Phone / WhatsApp:</strong> {order.customer_phone}
                             </p>
+                            {(order as any).customer_note && (
+                              <p className="text-amber-200/80 bg-neutral-950 p-2.5 rounded-lg border border-neutral-800 text-[11px]">
+                                <strong className="text-amber-400">Customer Note:</strong> {(order as any).customer_note}
+                              </p>
+                            )}
                             
-                            <div className="pt-2 flex gap-3">
+                            <div className="pt-2 flex flex-wrap gap-2.5">
                               <a
                                 href={`tel:${order.customer_phone}`}
                                 className="px-3 py-1.5 rounded-lg bg-neutral-950 border border-neutral-700 text-amber-300 hover:text-white text-[11px] font-mono flex items-center gap-1.5"
                               >
-                                <Phone size={13} /> Call Customer
+                                <Phone size={13} /> Call
                               </a>
                               <a
                                 href={`https://wa.me/234${order.customer_phone?.replace(/^0/, '')}?text=Hello%20${encodeURIComponent(order.customer_name)},%20regarding%20your%20Trendy%20Scents%20order%20%23${order.order_number}...`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 text-[11px] font-mono font-bold flex items-center gap-1.5 shadow"
+                                className="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500 hover:text-neutral-950 text-[11px] font-mono font-bold flex items-center gap-1.5 shadow"
                               >
                                 <MessageSquare size={13} /> WhatsApp
+                              </a>
+                              <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((order.delivery_address || 'Trendy Scents, Isaac Boro Expressway') + ', Yenagoa, Bayelsa State')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1.5 rounded-lg bg-neutral-950 border border-neutral-700 text-amber-300 hover:text-white text-[11px] font-mono flex items-center gap-1.5"
+                              >
+                                <ExternalLink size={13} /> Open Map
                               </a>
                               <Link
                                 href={`/order/${order.order_number}`}
                                 target="_blank"
                                 className="px-3 py-1.5 rounded-lg bg-neutral-950 border border-neutral-700 text-neutral-300 hover:text-white text-[11px] font-mono flex items-center gap-1.5"
                               >
-                                <ExternalLink size={13} /> View Live Map
+                                Live Tracking →
                               </Link>
                             </div>
                           </div>
                         </div>
 
                         {/* Right: Payment Receipt Preview */}
-                        <div className="md:col-span-6 space-y-3">
+                        <div className="md:col-span-6 space-y-4">
                           <h4 className="text-xs font-mono text-amber-400 uppercase tracking-wider font-bold">
                             Attached Bank Transfer Receipt
                           </h4>
                           {order.receipt_url ? (
-                            <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-between gap-4">
-                              <div className="flex items-center gap-3">
-                                <img
-                                  src={order.receipt_url}
-                                  alt="Receipt thumbnail"
-                                  className="w-12 h-12 object-cover rounded-lg border border-neutral-700 cursor-pointer"
-                                  onClick={() => setReceiptModalUrl(order.receipt_url!)}
-                                />
-                                <div>
-                                  <p className="text-xs font-mono text-white font-bold">
-                                    {order.receipt_name || 'Transfer_Receipt.png'}
-                                  </p>
-                                  <p className="text-[10px] font-mono text-emerald-400">Attached to order</p>
+                            <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 space-y-3">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={order.receipt_url}
+                                    alt="Receipt thumbnail"
+                                    className="w-14 h-14 object-cover rounded-lg border border-neutral-700 cursor-pointer hover:border-amber-400 transition-colors"
+                                    onClick={() => setReceiptModalUrl(order.receipt_url!)}
+                                  />
+                                  <div>
+                                    <p className="text-xs font-mono text-white font-bold">
+                                      {order.receipt_name || 'Bank_Transfer_Receipt.jpg'}
+                                    </p>
+                                    <p className="text-[10px] font-mono text-emerald-400">Attached to order</p>
+                                  </div>
                                 </div>
+                                <button
+                                  onClick={() => setReceiptModalUrl(order.receipt_url!)}
+                                  className="px-3.5 py-2 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500 hover:text-neutral-950 text-xs font-mono font-bold transition-all flex items-center gap-1.5"
+                                >
+                                  <Eye size={14} /> View Full Receipt
+                                </button>
                               </div>
-                              <button
-                                onClick={() => setReceiptModalUrl(order.receipt_url!)}
-                                className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500 hover:text-neutral-950 text-xs font-mono font-bold transition-all"
-                              >
-                                <Eye size={13} className="inline mr-1" /> View Proof
-                              </button>
                             </div>
                           ) : (
                             <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-400">
                               No image screenshot attached. Transfer reference <strong className="text-white">#{order.order_number}</strong> logged manually.
                             </div>
                           )}
+
+                          {/* Ordered Items List */}
+                          <div className="space-y-2">
+                            <h4 className="text-xs font-mono text-neutral-400 uppercase tracking-wider">
+                              Ordered Items ({items.length > 0 ? items.length : '1'})
+                            </h4>
+                            {items.length > 0 ? (
+                              <div className="rounded-xl bg-neutral-900 border border-neutral-800 divide-y divide-neutral-800/60 overflow-hidden text-xs font-mono">
+                                {items.map((it) => (
+                                  <div key={it.id} className="p-2.5 px-3 flex justify-between items-center text-neutral-300">
+                                    <span>{it.quantity}x {it.product_name}</span>
+                                    <span className="text-amber-300 font-bold">{naira(Number(it.price) * Number(it.quantity))}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-400">
+                                Fragrance decant order total: <strong className="text-amber-300">{naira(Number(order.total_amount))}</strong>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                       </div>
                     </div>
                   )}
+
 
                 </div>
               )

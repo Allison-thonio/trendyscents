@@ -14,8 +14,10 @@ export default function CheckoutPage() {
 
   // Customer Form State
   const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Receipt File Upload State
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
@@ -84,12 +86,16 @@ export default function CheckoutPage() {
   const handleCompleteOrder = async () => {
     const customerName = name || 'Valued Customer'
     const customerPhone = phone || '08000000000'
+    const customerEmail = email || `${customerPhone.replace(/\D/g, '') || 'customer'}@trendyscents.ng`
     const deliveryAddress = address || 'Isaac Boro Expressway, Yenagoa'
 
-    // 1. Local state update
+    setIsSubmitting(true)
+
+    // 1. Local state update for instant client responsiveness
     saveOrder({
       ref,
       customerName,
+      email: customerEmail,
       phone: customerPhone,
       address: deliveryAddress,
       items: [...cart],
@@ -101,30 +107,38 @@ export default function CheckoutPage() {
       etaMinutes: 25,
     })
 
-    // 2. Submit to server API route /api/orders (uses admin client / service key to reliably persist)
+    // 2. Submit to server API route /api/orders (persists directly into Supabase database)
     try {
-      await fetch('/api/orders', {
+      const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ref,
           customerName,
+          customerEmail,
           phone: customerPhone,
           address: deliveryAddress,
+          city: 'Yenagoa',
+          state: 'Bayelsa',
           total,
           receiptUrl: receiptPreview || null,
           receiptName: receiptFile?.name || 'Bank_Transfer_Receipt.jpg',
           items: cart
         })
       })
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        console.warn('API order sync warning:', errData)
+      }
     } catch (e) {
       console.warn('API order sync background error:', e)
+    } finally {
+      setIsSubmitting(false)
+      clearCart()
+      setStep(3)
     }
-
-    clearCart()
-    setStep(3)
   }
-
 
   return (
     <>
@@ -139,9 +153,10 @@ export default function CheckoutPage() {
                 <Sparkles size={13} /> Step 0{step} of 03
               </span>
               <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight">
-                {step === 1 ? 'Customer & Delivery Details' : step === 2 ? 'Make Transfer & Upload Receipt' : 'Order Confirmed'}
+                {step === 1 ? 'Customer & Delivery Details' : step === 2 ? 'Make Transfer & Upload Receipt' : 'Your Order Has Been Confirmed'}
               </h1>
             </div>
+
 
             {/* Stepper Pills */}
             <div className="flex items-center gap-2">
@@ -200,18 +215,34 @@ export default function CheckoutPage() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <label htmlFor="phone" className="text-xs font-mono text-amber-300 uppercase tracking-wider block">
-                        Phone Number / WhatsApp *
-                      </label>
-                      <input
-                        id="phone"
-                        required
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="e.g. 0801 234 5678"
-                        className="w-full bg-neutral-950 border border-neutral-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-400 transition-colors shadow-inner"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label htmlFor="phone" className="text-xs font-mono text-amber-300 uppercase tracking-wider block">
+                          Phone Number / WhatsApp *
+                        </label>
+                        <input
+                          id="phone"
+                          required
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="e.g. 0801 234 5678"
+                          className="w-full bg-neutral-950 border border-neutral-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-400 transition-colors shadow-inner"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="email" className="text-xs font-mono text-amber-300 uppercase tracking-wider block">
+                          Email Address
+                        </label>
+                        <input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="e.g. blessing@gmail.com"
+                          className="w-full bg-neutral-950 border border-neutral-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-400 transition-colors shadow-inner"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -219,12 +250,12 @@ export default function CheckoutPage() {
 
                   <div className="space-y-4">
                     <h2 className="text-xl font-serif font-bold text-white flex items-center gap-2">
-                      <Home size={18} className="text-amber-400" /> Delivery Address or Pickup Note
+                      <Home size={18} className="text-amber-400" /> Delivery Address or Pickup Location
                     </h2>
 
                     <div className="space-y-2">
                       <label htmlFor="address" className="text-xs font-mono text-amber-300 uppercase tracking-wider block">
-                        Delivery Address or Store Pickup Request *
+                        Delivery Address in Yenagoa or Store Pickup Request *
                       </label>
                       <textarea
                         id="address"
@@ -232,7 +263,7 @@ export default function CheckoutPage() {
                         rows={3}
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        placeholder="Provide your delivery address in Yenagoa or request pickup at our Isaac Boro Expressway bar..."
+                        placeholder="e.g. Flat 4, Isaac Boro Expressway, Yenagoa, Bayelsa State (or Yenagoa Fragrance Lounge Pickup)"
                         className="w-full bg-neutral-950 border border-neutral-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-400 transition-colors shadow-inner"
                       />
                     </div>
@@ -368,46 +399,83 @@ export default function CheckoutPage() {
                     </button>
                     <button
                       onClick={handleCompleteOrder}
-                      disabled={!receiptFile}
+                      disabled={!receiptFile || isSubmitting}
                       className={`w-2/3 py-3.5 rounded-xl text-[#0A0908] font-bold font-mono text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                        receiptFile
+                        receiptFile && !isSubmitting
                           ? 'bg-[#C8923C] hover:bg-[#D89A3E] shadow-lg shadow-[#C8923C]/20 cursor-pointer'
                           : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700'
                       }`}
                     >
-                      <span>Submit Receipt & Create Order</span>
-                      <ArrowRight size={16} />
+                      {isSubmitting ? (
+                        <span>Logging Order...</span>
+                      ) : (
+                        <>
+                          <span>Submit Receipt & Place Order</span>
+                          <ArrowRight size={16} />
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
               )}
 
               {step === 3 && (
-                <div className="space-y-6 text-center py-6">
-                  <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/20">
-                    <Check size={32} />
+                <div className="space-y-8 text-center py-4">
+                  <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/30">
+                    <CheckCircle2 size={42} />
                   </div>
 
-                  <div className="space-y-2">
-                    <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white">
-                      Payment Receipt Submitted!
+                  <div className="space-y-3">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-xs font-mono uppercase tracking-widest">
+                      Receipt Logged & Confirmed
+                    </span>
+                    <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white">
+                      Your Order Has Been Confirmed!
                     </h2>
-                    <p className="text-sm text-neutral-300 max-w-md mx-auto">
-                      Your order reference <strong className="text-amber-300 font-mono px-2 py-0.5 rounded bg-neutral-950 border border-amber-500/30">{ref}</strong> is active. You can track your decant pouring and Google Maps delivery in real time below.
+                    <p className="text-sm text-neutral-300 max-w-lg mx-auto leading-relaxed">
+                      Thank you, <strong className="text-white">{name || 'Valued Customer'}</strong>! We have received your order details and bank transfer receipt. Our fragrance decant bar has registered reference:
                     </p>
+                    <div className="inline-block px-5 py-2 rounded-xl bg-neutral-950 border border-amber-500/40 text-amber-300 font-mono text-lg font-bold shadow-inner">
+                      #{ref}
+                    </div>
                   </div>
 
-                  <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+                  {/* Summary Box */}
+                  <div className="text-left p-5 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-3 text-xs font-mono">
+                    <div className="flex justify-between pb-2 border-b border-neutral-800 text-neutral-400">
+                      <span>Customer:</span>
+                      <strong className="text-white font-sans">{name}</strong>
+                    </div>
+                    <div className="flex justify-between pb-2 border-b border-neutral-800 text-neutral-400">
+                      <span>Phone:</span>
+                      <strong className="text-white">{phone}</strong>
+                    </div>
+                    <div className="flex justify-between pb-2 border-b border-neutral-800 text-neutral-400">
+                      <span>Destination:</span>
+                      <strong className="text-white text-right max-w-xs">{address}</strong>
+                    </div>
+                    <div className="flex justify-between pb-2 border-b border-neutral-800 text-neutral-400">
+                      <span>Payment Method:</span>
+                      <span className="text-emerald-400 font-bold">Bank Transfer (Receipt Attached)</span>
+                    </div>
+                    <div className="flex justify-between pt-1 text-sm font-serif">
+                      <span className="text-neutral-400 font-mono text-xs">Total Amount:</span>
+                      <strong className="text-amber-300 text-base">{naira(total)}</strong>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Link
                       href={`/order/${ref}`}
-                      className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold font-mono text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 inline-flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-bold font-mono text-sm uppercase tracking-wider transition-all shadow-xl shadow-amber-500/25 inline-flex items-center justify-center gap-2 hover:scale-[1.02]"
                     >
-                      <span>Open Live Order & Maps Tracker</span>
-                      <ArrowRight size={16} />
+                      <span>Proceed to Live Order Tracking & Dispatch Map</span>
+                      <ArrowRight size={18} />
                     </Link>
                   </div>
                 </div>
               )}
+
 
             </div>
 

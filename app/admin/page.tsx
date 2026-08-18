@@ -32,30 +32,24 @@ export default function AdminDashboardPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch orders from Supabase
-      const { data: dbOrders } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false })
+      // Fetch orders from /api/admin/orders API route (admin server client)
+      const res = await fetch('/api/admin/orders')
+      const data = await res.json()
 
-      // Fetch products from Supabase
-      const { data: dbProducts } = await supabase
-        .from('products')
-        .select('*')
-
-      if (dbOrders && dbOrders.length > 0) {
-        setOrders(dbOrders as OrderRow[])
+      if (data.orders && data.orders.length > 0) {
+        setOrders(data.orders as OrderRow[])
       } else {
         // Fallback to local Zustand store orders if any
         const fallbackList: OrderRow[] = Object.values(localOrders).map((o) => ({
           id: o.ref,
           order_number: o.ref,
           customer_name: o.customerName,
+          customer_email: o.email || 'customer@trendyscents.ng',
           customer_phone: o.phone,
           delivery_address: o.address,
           total_amount: o.total,
           payment_method: 'Bank Transfer',
-          payment_status: o.status === 'Payment Verification' ? 'pending' : 'verified',
+          payment_status: o.status === 'Waiting to confirm receipt' ? 'pending' : 'verified',
           order_status: o.status,
           receipt_url: o.receiptUrl || null,
           receipt_name: o.receiptName || null,
@@ -63,6 +57,11 @@ export default function AdminDashboardPage() {
         }))
         setOrders(fallbackList)
       }
+
+      // Fetch products from Supabase
+      const { data: dbProducts } = await supabase
+        .from('products')
+        .select('*')
 
       if (dbProducts && dbProducts.length > 0) {
         setProducts(dbProducts as ProductRow[])
@@ -75,6 +74,7 @@ export default function AdminDashboardPage() {
       setLoading(false)
     }
   }
+
 
   useEffect(() => {
     fetchData()

@@ -63,6 +63,19 @@ export default function OrderTrackingPage({
     return () => clearInterval(interval)
   }, [ref])
 
+  // Parse receipt and customer note from notes JSON if present
+  let dbReceiptUrl = dbOrder?.receipt_url
+  let dbReceiptName = dbOrder?.receipt_name
+  if (dbOrder?.notes && typeof dbOrder.notes === 'string' && dbOrder.notes.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(dbOrder.notes)
+      if (parsed.receiptUrl) dbReceiptUrl = parsed.receiptUrl
+      if (parsed.receiptName) dbReceiptName = parsed.receiptName
+    } catch {
+      // ignore
+    }
+  }
+
   // Resolve details from DB or Local state fallback
   const orderDetails = {
     ref,
@@ -73,8 +86,8 @@ export default function OrderTrackingPage({
     createdAt: dbOrder?.created_at ? new Date(dbOrder.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : localOrder?.createdAt || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     status: dbOrder?.order_status || localOrder?.status || 'Waiting to confirm receipt',
     etaMinutes: 22,
-    receiptUrl: dbOrder?.receipt_url || localOrder?.receiptUrl || null,
-    receiptName: dbOrder?.receipt_name || localOrder?.receiptName || 'Bank_Transfer_Receipt.jpg'
+    receiptUrl: dbReceiptUrl || localOrder?.receiptUrl || null,
+    receiptName: dbReceiptName || localOrder?.receiptName || 'Bank_Transfer_Receipt.jpg'
   }
 
   // Determine active step index
@@ -89,8 +102,9 @@ export default function OrderTrackingPage({
   }
   const activeStep = statusStepMap[orderDetails.status] ?? 1
 
-  // Google Maps iframe src centered at Isaac Boro Expressway, Yenagoa
-  const googleMapEmbedUrl = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15904.382419266155!2d6.3059421!3d4.9163329!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x106a050048eccd6f%3A0xf339d05ae6a61279!2sTrendy%20Scents!5e0!3m2!1sen!2sng!4v1700000000000!5m2!1sen!2sng`
+  // Clean, accurate Google Maps embed targeting destination in Yenagoa
+  const mapSearchQuery = encodeURIComponent(`${orderDetails.address}, Yenagoa, Bayelsa State`)
+  const googleMapEmbedUrl = `https://maps.google.com/maps?q=${mapSearchQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`
 
   return (
     <>
@@ -118,7 +132,7 @@ export default function OrderTrackingPage({
                 Live Dispatch Tracking
               </span>
               <a
-                href={storeLocation.googleMapsUrl}
+                href={`https://www.google.com/maps/search/?api=1&query=${mapSearchQuery}`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white text-xs font-mono transition-colors"
@@ -140,10 +154,10 @@ export default function OrderTrackingPage({
                 {/* Map Header Status Bar */}
                 <div className="p-4 bg-neutral-900/90 backdrop-blur-md border-b border-neutral-800 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-mono text-neutral-300">
-                    <MapPin size={16} className="text-amber-400" />
-                    <span>Origin: <strong>Isaac Boro Expressway, Yenagoa</strong></span>
+                    <MapPin size={16} className="text-amber-400 shrink-0" />
+                    <span className="truncate">Destination: <strong>{orderDetails.address}</strong></span>
                   </div>
-                  <div className="text-xs font-mono text-amber-300 flex items-center gap-1">
+                  <div className="text-xs font-mono text-amber-300 flex items-center gap-1 shrink-0">
                     <Clock size={14} /> ETA: {orderDetails.etaMinutes} mins
                   </div>
                 </div>
@@ -155,16 +169,16 @@ export default function OrderTrackingPage({
                     src={googleMapEmbedUrl}
                     width="100%"
                     height="100%"
-                    style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) contrast(1.1)' }}
+                    style={{ border: 0 }}
                     allowFullScreen
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                   />
 
                   {/* Floating Overlay Route Card */}
-                  <div className="absolute bottom-4 left-4 right-4 p-4 rounded-xl bg-black/85 backdrop-blur-md border border-amber-500/30 text-white shadow-2xl flex items-center justify-between gap-3">
+                  <div className="absolute bottom-4 left-4 right-4 p-4 rounded-xl bg-black/90 backdrop-blur-md border border-amber-500/30 text-white shadow-2xl flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 shadow-md">
+                      <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 shadow-md shrink-0">
                         <Truck size={20} />
                       </div>
                       <div>
@@ -188,6 +202,7 @@ export default function OrderTrackingPage({
                   </div>
                 </div>
               </div>
+
 
               {/* Receipt Confirmation Status Banner */}
               {orderDetails.status === 'Waiting to confirm receipt' ? (

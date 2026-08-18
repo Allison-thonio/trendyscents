@@ -37,17 +37,24 @@ export async function POST(req: NextRequest) {
     const {
       ref,
       customerName,
+      customerEmail,
       phone,
       address,
+      city,
+      state,
       total,
       receiptUrl,
       receiptName,
+      notes,
       items
     } = body
 
     // Validation & Anti-Abuse Checks
     const cleanName = (customerName || '').trim()
     const cleanPhone = (phone || '').replace(/\D/g, '')
+    const emailToUse =
+      (customerEmail && customerEmail.trim()) ||
+      (cleanPhone ? `${cleanPhone}@trendyscents.ng` : 'customer@trendyscents.ng')
 
     if (!ref || cleanName.length < 2 || cleanPhone.length < 10 || !total || Number(total) <= 0) {
       return NextResponse.json(
@@ -63,20 +70,32 @@ export async function POST(req: NextRequest) {
       supabase = await createClient()
     }
 
+    // Pack receipt and customer notes into notes JSON
+    const notesPayload = JSON.stringify({
+      receiptUrl: receiptUrl || null,
+      receiptName: receiptName || 'Bank_Transfer_Receipt.jpg',
+      customerNote: notes || '',
+      summary: Array.isArray(items)
+        ? items.map((i: any) => `${i.quantity || 1}x ${i.scent?.name || i.productName || 'Scent'}`).join(', ')
+        : ''
+    })
+
     // Insert order into Supabase public.orders
     const { data: insertedOrder, error: orderError } = await supabase
       .from('orders')
       .insert({
         order_number: ref,
-        customer_name: customerName,
-        customer_phone: phone,
-        delivery_address: address || 'Isaac Boro Expressway, Yenagoa',
+        customer_name: cleanName,
+        customer_email: emailToUse,
+        customer_phone: phone || cleanPhone,
+        delivery_address: address || 'Isaac Boro Expressway, Yenagoa, Bayelsa State',
+        city: city || 'Yenagoa',
+        state: state || 'Bayelsa',
         total_amount: Number(total),
         payment_method: 'Bank Transfer',
         payment_status: 'pending',
         order_status: 'Waiting to confirm receipt',
-        receipt_url: receiptUrl || null,
-        receipt_name: receiptName || 'Bank_Transfer_Receipt.jpg'
+        notes: notesPayload
       })
       .select()
       .single()
@@ -108,3 +127,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err?.message || 'Server error placing order' }, { status: 500 })
   }
 }
+
